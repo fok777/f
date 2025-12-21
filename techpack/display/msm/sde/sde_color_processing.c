@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  */
 
@@ -284,16 +283,19 @@ static int set_dspp_pcc_feature(struct sde_hw_dspp *hw_dspp,
 		ret = -EINVAL;
 	else {
 
-		if (hw_cfg->payload)
+		if (hw_cfg->payload) {
 			pcc_cfg = hw_cfg->payload;
+		}
 
-		if (hw_crtc->mi_dimlayer_type & MI_DIMLAYER_FOD_HBM_OVERLAY)
+		if (hw_crtc->mi_dimlayer_type & MI_DIMLAYER_FOD_HBM_OVERLAY) {
 			sde_dspp_clear_pcc(hw_cfg);
-		else
+		} else {
 			hw_cfg->payload_clear = NULL;
+		}
 
-		if (hw_cfg->payload_clear)
+		if (hw_cfg->payload_clear) {
 			pcc_cfg = hw_cfg->payload_clear;
+		}
 
 		hw_dspp->ops.setup_pcc(hw_dspp, hw_cfg);
 	}
@@ -2115,9 +2117,9 @@ int sde_cp_crtc_set_property(struct drm_crtc *crtc,
 		sde_cp_update_list(prop_node, sde_crtc, true);
 	}
 
-	if (fod_changed)
+	if (fod_changed) {
 		ret = -ENOENT;
-
+	}
 exit:
 	mutex_unlock(&sde_crtc->crtc_cp_lock);
 	return ret;
@@ -4121,7 +4123,7 @@ void sde_cp_crtc_enable(struct drm_crtc *drm_crtc)
 	if (!num_mixers)
 		return;
 	mutex_lock(&crtc->crtc_cp_lock);
-	info = vzalloc(sizeof(struct sde_kms_info));
+	info = kzalloc(sizeof(struct sde_kms_info), GFP_KERNEL);
 	if (info) {
 		for (i = 0; i < ARRAY_SIZE(dspp_cap_update_func); i++)
 			dspp_cap_update_func[i](crtc, info);
@@ -4130,7 +4132,7 @@ void sde_cp_crtc_enable(struct drm_crtc *drm_crtc)
 			info->data, SDE_KMS_INFO_DATALEN(info),
 			CRTC_PROP_DSPP_INFO);
 	}
-	vfree(info);
+	kfree(info);
 	mutex_unlock(&crtc->crtc_cp_lock);
 }
 
@@ -4145,12 +4147,12 @@ void sde_cp_crtc_disable(struct drm_crtc *drm_crtc)
 	}
 	crtc = to_sde_crtc(drm_crtc);
 	mutex_lock(&crtc->crtc_cp_lock);
-	info = vzalloc(sizeof(struct sde_kms_info));
+	info = kzalloc(sizeof(struct sde_kms_info), GFP_KERNEL);
 	if (info)
 		msm_property_set_blob(&crtc->property_info,
 				&crtc->dspp_blob_info,
 			info->data, SDE_KMS_INFO_DATALEN(info),
 			CRTC_PROP_DSPP_INFO);
 	mutex_unlock(&crtc->crtc_cp_lock);
-	vfree(info);
+	kfree(info);
 }
