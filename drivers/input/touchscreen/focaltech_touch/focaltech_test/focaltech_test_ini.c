@@ -326,8 +326,8 @@ int ini_get_key_data(char *filedata)
 
 			continue;
 		}
-		strlcpy(test_data.ini_data[test_data.ini_keyword_num].section_name, tmsection_name, strlen(test_data.ini_data[test_data.ini_keyword_num].section_name));
-		test_data.ini_data[test_data.ini_keyword_num].section_name_len = strlen(test_data.ini_data[test_data.ini_keyword_num].section_name);
+		strlcpy(test_data.ini_data[test_data.ini_keyword_num].section_name, tmsection_name, strlen(tmsection_name) + 1);
+		test_data.ini_data[test_data.ini_keyword_num].section_name_len = strlen(tmsection_name);
 
 		iEqualSign = 0;
 		for (i = 0; i < n; i++) {

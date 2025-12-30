@@ -1,5 +1,6 @@
 /************************************************************************
 * Copyright (C) 2012-2018, Focaltech Systems (R), All Rights Reserved.
+* Copyright (C) 2020 XiaoMi, Inc.
 *
 * File Name: Focaltech_test_ft8719.c
 *

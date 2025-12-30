@@ -118,7 +118,6 @@ obj-$(CONFIG_TOUCHSCREEN_NT36XXX)	+= nt36xxx/
 # Xiaomi
 obj-$(CONFIG_INPUT_PRESS_NDT) += ndt_button.o
 obj-$(CONFIG_TOUCHSCREEN_FOCALTECH_3658U) += focaltech_3658u/
-obj-$(CONFIG_TOUCHSCREEN_FTS_MI)	+= focaltech_touch_mi/
 obj-$(CONFIG_TOUCHSCREEN_FOCALTECH) += focaltech_spi/
 obj-$(CONFIG_TOUCHSCREEN_GOODIX_GTX8) += goodix_driver_gt9886/
 obj-$(CONFIG_TOUCHSCREEN_ST_FTS_V521) += fts_521/

@@ -3,6 +3,7 @@
  * FocalTech TouchScreen driver.
  *
  * Copyright (c) 2012-2018, FocalTech Systems, Ltd., all rights reserved.
+ * Copyright (C) 2020 XiaoMi, Inc.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -1459,7 +1460,7 @@ static ssize_t fts_test_store(struct device *dev, struct device_attribute *attr,
 
 	input_dev = ts_data->input_dev;
 	memset(fwname, 0, sizeof(fwname));
-	snprintf(fwname, 128, "%s", buf);
+	snprintf(fwname, PAGE_SIZE, "%s", buf);
 	fwname[count - 1] = '\0';
 	FTS_TEST_DBG("fwname:%s.", fwname);
 
@@ -1568,7 +1569,7 @@ static int get_ic_types_by_chipid(short chipid)
 	char ic_name[30] = {0};
 
 	FTS_TEST_INFO("chip_id:%4x\n", (fts_data->chipid & 0xffff));
-	snprintf(ic_name, 30, "FT%4x", (fts_data->chipid & 0xffff));
+	snprintf(ic_name, PAGE_SIZE, "FT%4x", (fts_data->chipid & 0xffff));
 	return fts_ic_table_get_ic_code_from_ic_name(ic_name);
 }
 
