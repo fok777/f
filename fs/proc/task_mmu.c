@@ -1984,10 +1984,6 @@ struct reclaim_param reclaim_task_anon(struct task_struct *task,
 
 	reclaim_walk.private = &rp;
 
-	if (NULL == task->signal)
-		goto out;
-
-	before_reclaim_adj = task->signal->oom_score_adj;
 	mmap_read_lock(mm);
 	for (vma = mm->mmap; vma; vma = vma->vm_next) {
 		if (is_vm_hugetlb_page(vma))
@@ -2102,6 +2098,10 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
 	rp.nr_reclaimed = 0;
 	reclaim_walk.private = &rp;
 
+	if (NULL == task->signal)
+		goto out;
+
+	before_reclaim_adj = task->signal->oom_score_adj;
 	mmap_read_lock(mm);
 	if (type == RECLAIM_RANGE) {
 		vma = find_vma(mm, start);
