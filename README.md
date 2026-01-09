@@ -47,7 +47,8 @@ This kernel stands on the shoulders of giants, combining contributions from mult
 5. zRAM 支持 LZ4、LZ4HC、lz4k_oplus、LZ4KD、ZSTD 等压缩算法  
 6. 向后移植 5.10 BPF(支持安卓 16)  
 7. 触摸屏驱动、相机驱动、音频驱动、GPU/DRM/MSM、CNSS2 驱动使用小米版本(来自 UtsavBalar1231's repo 和 MiCode, AOSP 版 Display/DRM 驱动为 LineageOS 版本), 并且触摸屏驱动具有双击亮屏节点  
-8. 修复[电量卡在 1% 的问题](https://github.com/liyafe1997/Xiaomi-fix-battery-one-percent)，并且支持解容  
+8. 修复[电量卡在 1% 的问题](https://github.com/liyafe1997/Xiaomi-fix-battery-one-percent)，并且支持解容
+9. 集成 [BBG(Baseband-guard)](https://github.com/vc-teahouse/Baseband-guard)  
 
 **English:**  
 This kernel supports [ReSukiSU](https://github.com/ReSukiSU/ReSukiSU) (based on [SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra), a fork of KernelSU with KPM support) & [SuSFS](https://gitlab.com/simonpunk/susfs4ksu).  
@@ -65,7 +66,8 @@ Below are some of the key features:
 5. zRAM with support for multiple compression algorithms, including LZ4, LZ4HC, lz4k_oplus, LZ4KD, and ZSTD  
 6. Backported BPF from Linux 5.10 (Android 16 compatible)  
 7. Touchscreen, camera, audio, GPU/DRM/MSM, and CNSS2 drivers use Xiaomi-specific implementations (sourced from UtsavBalar1231’s repository and MiCode. The AOSP version of the Display/DRM driver is LineageOS version.); also, `double_tap` node has been added to the touchscreen driver  
-8. Fixes [the issue where the battery percentage gets stuck at 1%](https://github.com/liyafe1997/Xiaomi-fix-battery-one-percent), and supports recognizing higher-capacity replacement batteries  
+8. Fixes [the issue where the battery percentage gets stuck at 1%](https://github.com/liyafe1997/Xiaomi-fix-battery-one-percent), and supports recognizing higher-capacity replacement batteries
+9. Integrate [BBG(Baseband-guard)](https://github.com/vc-teahouse/Baseband-guard)  
 
 ---
 
