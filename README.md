@@ -35,7 +35,7 @@ This kernel stands on the shoulders of giants, combining contributions from mult
 
 ## 特性 / Features
 **中文:**  
-本内核支持 [SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra)(一个 KernelSU 的 fork，支持 KPM) & [SUSFS](https://gitlab.com/simonpunk/susfs4ksu)。请自行安装 [SukiSU Ultra 的管理器](https://github.com/ShirkNeko/SukiSU-Ultra/releases)。NoKernelSU 版本支持应用 Magisk 和 APatch(及他们的分支)。  
+本内核支持 [ReSukiSU](https://github.com/ReSukiSU/ReSukiSU)(基于 [SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra), 一个 KernelSU 的 fork，支持 KPM) & [SuSFS](https://gitlab.com/simonpunk/susfs4ksu)。请自行安装 ReSukiSU 的管理器。NoKernelSU 版本支持应用 Magisk 和 APatch(及他们的分支)。  
 
 **Release** 里的编译好的内核成品由 `android16-aptusitu` 分支编译，应当能在原版 MIUI/HyperOS 和第三方的基于 AOSP 的各种 Android11-16 的 ROM 上使用。欢迎大家尝试并反馈(提 Issue 或 Pull Requests)! 酷友们到 [这个帖子](https://www.coolapk.com/feed/67088487) 讨论或反馈，也可以加入 QQ 群，或者给我私信反馈!  
 
@@ -46,12 +46,12 @@ This kernel stands on the shoulders of giants, combining contributions from mult
 4. 支持 EROFS  
 5. zRAM 支持 LZ4、LZ4HC、lz4k_oplus、LZ4KD、ZSTD 等压缩算法  
 6. 向后移植 5.10 BPF(支持安卓 16)  
-7. 触摸屏驱动、相机驱动、音频驱动、GPU/DRM/MSM、CNSS2 驱动使用小米版本(来自 UtsavBalar1231's repo 和 MiCode, AOSP 版 DISPLAY/DRM 驱动为 LOS 版本), 为 `lmi`(Redmi K30 Pro/POCO F2 Pro) 的触摸屏驱动添加了双击亮屏节点  
+7. 触摸屏驱动、相机驱动、音频驱动、GPU/DRM/MSM、CNSS2 驱动使用小米版本(来自 UtsavBalar1231's repo 和 MiCode, AOSP 版 Display/DRM 驱动为 LineageOS 版本), 并且触摸屏驱动具有双击亮屏节点  
 8. 修复[电量卡在 1% 的问题](https://github.com/liyafe1997/Xiaomi-fix-battery-one-percent)，并且支持解容  
 
 **English:**  
-This kernel supports [SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra) (a fork of KernelSU with KPM support) & [SUSFS](https://gitlab.com/simonpunk/susfs4ksu).  
-Please install the [SukiSU Ultra Manager](https://github.com/ShirkNeko/SukiSU-Ultra/releases) by yourself.  
+This kernel supports [ReSukiSU](https://github.com/ReSukiSU/ReSukiSU) (based on [SukiSU Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra), a fork of KernelSU with KPM support) & [SuSFS](https://gitlab.com/simonpunk/susfs4ksu).  
+Please install the ReSukiSU Manager by yourself.  
 The NoKernelSU version supports Magisk and APatch (and their forks).  
 
 The prebuilt kernel in the **Release** section is compiled from the `android16-aptusitu` branch, and should work on stock MIUI/HyperOS as well as third-party AOSP-based ROMs for Android 11–16.  
@@ -64,7 +64,7 @@ Below are some of the key features:
 4. Support for EROFS  
 5. zRAM with support for multiple compression algorithms, including LZ4, LZ4HC, lz4k_oplus, LZ4KD, and ZSTD  
 6. Backported BPF from Linux 5.10 (Android 16 compatible)  
-7. Touchscreen, camera, audio, GPU/DRM/MSM, and CNSS2 drivers use Xiaomi-specific implementations (sourced from UtsavBalar1231’s repository and MiCode. The AOSP version of the Display/DRM driver is LOS version.); additionally, a double-tap-to-wake node has been added to the touchscreen driver for `lmi` (Redmi K30 Pro / POCO F2 Pro)  
+7. Touchscreen, camera, audio, GPU/DRM/MSM, and CNSS2 drivers use Xiaomi-specific implementations (sourced from UtsavBalar1231’s repository and MiCode. The AOSP version of the Display/DRM driver is LineageOS version.); also, `double_tap` node has been added to the touchscreen driver  
 8. Fixes [the issue where the battery percentage gets stuck at 1%](https://github.com/liyafe1997/Xiaomi-fix-battery-one-percent), and supports recognizing higher-capacity replacement batteries  
 
 ---
