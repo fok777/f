@@ -1500,7 +1500,7 @@ static int bq2597x_get_dev_role(struct i2c_client *client)
 	}
 
 	dev_info(&client->dev, "%s: matched to %s, dev_role: %d.\n",
-			__func__, of_id->compatible, (int)of_id->data);
+			__func__, of_id->compatible, (int)(uintptr_t)of_id->data);
 
 	return (int)(uintptr_t)of_id->data;
 }
