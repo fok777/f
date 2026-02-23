@@ -12,10 +12,4 @@ CDEFINES += -DRETRY_F0_CHECK \
 KBUILD_CPPFLAGS += $(CDEFINES)
 endif
 
-obj-$(CONFIG_INPUT_AW8697_HAPTIC)	+= aw8697-haptic.o
-ifeq ($(CONFIG_INPUT_AW8697_HAPTIC_DAGU),y)
-aw8697-haptic-objs = aw8697_dagu.o
-else
-aw8697-haptic-objs = aw8697.o
-endif
-aw8697-haptic-objs += ringbuffer.o
+obj-$(CONFIG_INPUT_AW8697_HAPTIC)	+= aw8697.o ringbuffer.o
