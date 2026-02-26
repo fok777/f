@@ -105,6 +105,7 @@ static void swrm_unlock_sleep(struct swr_mstr_ctrl *swrm);
 static u32 swr_master_read(struct swr_mstr_ctrl *swrm, unsigned int reg_addr);
 static void swr_master_write(struct swr_mstr_ctrl *swrm, u16 reg_addr, u32 val);
 static int swrm_runtime_resume(struct device *dev);
+static void swrm_wait_for_fifo_avail(struct swr_mstr_ctrl *swrm, int swrm_rd_wr);
 
 static u8 swrm_get_clk_div(int mclk_freq, int bus_clk_freq)
 {
@@ -381,6 +382,8 @@ static int swrm_request_hw_vote(struct swr_mstr_ctrl *swrm,
 				if (!swrm->dev_up) {
 					dev_dbg(swrm->dev, "%s: device is down or SSR state\n",
 							__func__);
+					trace_printk("%s: device is down or SSR state\n",
+							__func__);
 					mutex_unlock(&swrm->devlock);
 					return -ENODEV;
 				}
@@ -411,6 +414,8 @@ static int swrm_request_hw_vote(struct swr_mstr_ctrl *swrm,
 				if (!swrm->dev_up) {
 					dev_dbg(swrm->dev, "%s: device is down or SSR state\n",
 							__func__);
+					trace_printk("%s: device is down or SSR state\n",
+							__func__);
 					mutex_unlock(&swrm->devlock);
 					return -ENODEV;
 				}
@@ -439,6 +444,8 @@ static int swrm_request_hw_vote(struct swr_mstr_ctrl *swrm,
 	mutex_unlock(&swrm->devlock);
 	dev_dbg(swrm->dev, "%s: hw_clk_en: %d audio_core_clk_en: %d\n",
 		__func__, swrm->hw_core_clk_en, swrm->aud_core_clk_en);
+	trace_printk("%s: hw_clk_en: %d audio_core_clk_en: %d\n",
+		__func__, swrm->hw_core_clk_en, swrm->aud_core_clk_en);
 	return ret;
 }
 
@@ -452,7 +459,7 @@ static int swrm_get_ssp_period(struct swr_mstr_ctrl *swrm,
 	return ((swrm->bus_clk * 2) / ((row * col) * frame_sync));
 }
 
-static int swrm_core_vote_request(struct swr_mstr_ctrl *swrm)
+static int swrm_core_vote_request(struct swr_mstr_ctrl *swrm, bool enable)
 {
 	int ret = 0;
 
@@ -465,7 +472,7 @@ static int swrm_core_vote_request(struct swr_mstr_ctrl *swrm)
 		goto exit;
 	}
 	if (swrm->core_vote) {
-		ret = swrm->core_vote(swrm->handle, true);
+		ret = swrm->core_vote(swrm->handle, enable);
 		if (ret)
 			dev_err_ratelimited(swrm->dev,
 				"%s: core vote request failed\n", __func__);
@@ -496,12 +503,16 @@ static int swrm_clk_request(struct swr_mstr_ctrl *swrm, bool enable)
 					dev_err_ratelimited(swrm->dev,
 						"%s: core vote request failed\n",
 						__func__);
+					swrm->core_vote(swrm->handle, false);
 					goto exit;
 				}
+				ret = swrm->core_vote(swrm->handle, false);
 			}
 		}
 		swrm->clk_ref_count++;
 		if (swrm->clk_ref_count == 1) {
+			trace_printk("%s: clock enable count %d",
+				__func__, swrm->clk_ref_count);
 			ret = swrm->clk(swrm->handle, true);
 			if (ret) {
 				dev_err_ratelimited(swrm->dev,
@@ -511,6 +522,8 @@ static int swrm_clk_request(struct swr_mstr_ctrl *swrm, bool enable)
 			}
 		}
 	} else if (--swrm->clk_ref_count == 0) {
+		trace_printk("%s: clock disable count %d",
+			__func__, swrm->clk_ref_count);
 		swrm->clk(swrm->handle, false);
 		complete(&swrm->clk_off_complete);
 	}
@@ -529,6 +542,7 @@ static int swrm_ahb_write(struct swr_mstr_ctrl *swrm,
 {
 	u32 temp = (u32)(*value);
 	int ret = 0;
+	int vote_ret = 0;
 
 	mutex_lock(&swrm->devlock);
 	if (!swrm->dev_up)
@@ -542,13 +556,20 @@ static int swrm_ahb_write(struct swr_mstr_ctrl *swrm,
 					    __func__);
 			goto err;
 		}
-	} else if (swrm_core_vote_request(swrm)) {
-		goto err;
+	} else {
+		vote_ret = swrm_core_vote_request(swrm, true);
+		if (vote_ret == -ENOTSYNC)
+			goto err_vote;
+		else if (vote_ret)
+			goto err;
 	}
 
 	iowrite32(temp, swrm->swrm_dig_base + reg);
 	if (is_swr_clk_needed(swrm))
 		swrm_clk_request(swrm, FALSE);
+err_vote:
+	if (!is_swr_clk_needed(swrm))
+		swrm_core_vote_request(swrm, false);
 err:
 	mutex_unlock(&swrm->devlock);
 	return ret;
@@ -559,6 +580,7 @@ static int swrm_ahb_read(struct swr_mstr_ctrl *swrm,
 {
 	u32 temp = 0;
 	int ret = 0;
+	int vote_ret = 0;
 
 	mutex_lock(&swrm->devlock);
 	if (!swrm->dev_up)
@@ -571,14 +593,21 @@ static int swrm_ahb_read(struct swr_mstr_ctrl *swrm,
 					    __func__);
 			goto err;
 		}
-	} else if (swrm_core_vote_request(swrm)) {
-		goto err;
+	} else {
+		vote_ret = swrm_core_vote_request(swrm, true);
+		if (vote_ret == -ENOTSYNC)
+			goto err_vote;
+		else if (vote_ret)
+			goto err;
 	}
 
 	temp = ioread32(swrm->swrm_dig_base + reg);
 	*value = temp;
 	if (is_swr_clk_needed(swrm))
 		swrm_clk_request(swrm, FALSE);
+err_vote:
+	if (!is_swr_clk_needed(swrm))
+		swrm_core_vote_request(swrm, false);
 err:
 	mutex_unlock(&swrm->devlock);
 	return ret;
@@ -619,6 +648,9 @@ static int swr_master_bulk_write(struct swr_mstr_ctrl *swrm, u32 *reg_addr,
 		 * This still meets the hardware spec
 		 */
 			usleep_range(50, 55);
+			if (reg_addr[i] == SWRM_CMD_FIFO_WR_CMD)
+				swrm_wait_for_fifo_avail(swrm,
+							 SWRM_WR_CHECK_AVAIL);
 			swr_master_write(swrm, reg_addr[i], val[i]);
 		}
 		usleep_range(100, 110);
@@ -922,8 +954,6 @@ static int swrm_read(struct swr_master *master, u8 dev_num, u16 reg_addr,
 	mutex_unlock(&swrm->devlock);
 
 	pm_runtime_get_sync(swrm->dev);
-	if (swrm->req_clk_switch)
-		swrm_runtime_resume(swrm->dev);
 	ret = swrm_cmd_fifo_rd_cmd(swrm, &val, dev_num, 0, reg_addr, len);
 
 	if (!ret)
@@ -957,8 +987,6 @@ static int swrm_write(struct swr_master *master, u8 dev_num, u16 reg_addr,
 	mutex_unlock(&swrm->devlock);
 
 	pm_runtime_get_sync(swrm->dev);
-	if (swrm->req_clk_switch)
-		swrm_runtime_resume(swrm->dev);
 	ret = swrm_cmd_fifo_wr_cmd(swrm, reg_val, dev_num, 0, reg_addr);
 
 	pm_runtime_put_autosuspend(swrm->dev);
@@ -1804,6 +1832,7 @@ static irqreturn_t swr_mstr_interrupt(int irq, void *dev)
 	struct swr_device *swr_dev;
 	struct swr_master *mstr = &swrm->master;
 
+	trace_printk("%s enter\n", __func__);
 	if (unlikely(swrm_lock_sleep(swrm) == false)) {
 		dev_err(swrm->dev, "%s Failed to hold suspend\n", __func__);
 		return IRQ_NONE;
@@ -1821,6 +1850,7 @@ static irqreturn_t swr_mstr_interrupt(int irq, void *dev)
 	intr_sts = swr_master_read(swrm, SWRM_INTERRUPT_STATUS);
 	intr_sts_masked = intr_sts & swrm->intr_mask;
 
+	trace_printk("%s: status: 0x%x \n", __func__, intr_sts_masked);
 handle_irq:
 	for (i = 0; i < SWRM_INTERRUPT_MAX; i++) {
 		value = intr_sts_masked & (1 << i);
@@ -1965,6 +1995,7 @@ handle_irq:
 	mutex_unlock(&swrm->reslock);
 exit:
 	swrm_unlock_sleep(swrm);
+	trace_printk("%s exit\n", __func__);
 	return ret;
 }
 
@@ -1979,6 +2010,7 @@ static irqreturn_t swr_mstr_interrupt_v2(int irq, void *dev)
 	struct swr_device *swr_dev;
 	struct swr_master *mstr = &swrm->master;
 
+	trace_printk("%s enter\n", __func__);
 	if (unlikely(swrm_lock_sleep(swrm) == false)) {
 		dev_err(swrm->dev, "%s Failed to hold suspend\n", __func__);
 		return IRQ_NONE;
@@ -2005,6 +2037,7 @@ static irqreturn_t swr_mstr_interrupt_v2(int irq, void *dev)
 	intr_sts_masked = intr_sts & swrm->intr_mask;
 
 	dev_dbg(swrm->dev, "%s: status: 0x%x \n", __func__, intr_sts_masked);
+	trace_printk("%s: status: 0x%x \n", __func__, intr_sts_masked);
 handle_irq:
 	for (i = 0; i < SWRM_INTERRUPT_MAX; i++) {
 		value = intr_sts_masked & (1 << i);
@@ -2215,6 +2248,7 @@ err_audio_hw_vote:
 exit:
 	mutex_unlock(&swrm->reslock);
 	swrm_unlock_sleep(swrm);
+	trace_printk("%s exit\n", __func__);
 	return ret;
 }
 
@@ -2228,6 +2262,7 @@ static irqreturn_t swrm_wakeup_interrupt(int irq, void *dev)
 		return IRQ_NONE;
 	}
 
+	trace_printk("%s enter\n", __func__);
 	mutex_lock(&swrm->devlock);
 	if (!swrm->dev_up) {
 		if (swrm->wake_irq > 0) {
@@ -2266,6 +2301,7 @@ static irqreturn_t swrm_wakeup_interrupt(int irq, void *dev)
 	pm_runtime_put_autosuspend(swrm->dev);
 	swrm_unlock_sleep(swrm);
 exit:
+	trace_printk("%s exit\n", __func__);
 	return ret;
 }
 
@@ -2280,6 +2316,7 @@ static void swrm_wakeup_work(struct work_struct *work)
 		return;
 	}
 
+	trace_printk("%s enter\n", __func__);
 	mutex_lock(&swrm->devlock);
 	if (!swrm->dev_up) {
 		mutex_unlock(&swrm->devlock);
@@ -2295,6 +2332,7 @@ static void swrm_wakeup_work(struct work_struct *work)
 	pm_runtime_put_autosuspend(swrm->dev);
 	swrm_unlock_sleep(swrm);
 exit:
+	trace_printk("%s exit\n", __func__);
 	pm_relax(swrm->dev);
 }
 
@@ -2570,6 +2608,7 @@ static int swrm_probe(struct platform_device *pdev)
 	int ret = 0;
 	struct clk *lpass_core_hw_vote = NULL;
 	struct clk *lpass_core_audio = NULL;
+	u32 swrm_hw_ver = 0;
 
 	/* Allocate soundwire master driver structure */
 	swrm = devm_kzalloc(&pdev->dev, sizeof(struct swr_mstr_ctrl),
@@ -2595,6 +2634,14 @@ static int swrm_probe(struct platform_device *pdev)
 			__func__);
 		ret = -EINVAL;
 		goto err_pdata_fail;
+	}
+	ret = of_property_read_u32(pdev->dev.of_node,
+				"qcom,swr-master-version",
+				&swrm->version);
+	if (ret) {
+		dev_dbg(&pdev->dev, "%s: swrm version not defined, use default\n",
+			 __func__);
+		swrm->version = SWRM_VERSION_1_6;
 	}
 	ret = of_property_read_u32(pdev->dev.of_node, "qcom,swr_master_id",
 				&swrm->master_id);
@@ -2845,7 +2892,11 @@ static int swrm_probe(struct platform_device *pdev)
 		dev_dbg(&pdev->dev, "%s: Audio HW Vote is failed\n", __func__);
 	mutex_lock(&swrm->mlock);
 	swrm_clk_request(swrm, true);
-	swrm->version = swr_master_read(swrm, SWRM_COMP_HW_VERSION);
+	swrm_hw_ver = swr_master_read(swrm, SWRM_COMP_HW_VERSION);
+	if (swrm->version != swrm_hw_ver)
+		dev_info(&pdev->dev,
+			 "%s: version specified in dtsi: 0x%x not match with HW read version 0x%x\n",
+			 __func__, swrm->version, swrm_hw_ver);
 	swrm->rd_fifo_depth = ((swr_master_read(swrm, SWRM_COMP_PARAMS)
 				& SWRM_COMP_PARAMS_RD_FIFO_DEPTH) >> 15);
 	swrm->wr_fifo_depth = ((swr_master_read(swrm, SWRM_COMP_PARAMS)
@@ -2995,6 +3046,8 @@ static int swrm_runtime_resume(struct device *dev)
 
 	dev_dbg(dev, "%s: pm_runtime: resume, state:%d\n",
 		__func__, swrm->state);
+	trace_printk("%s: pm_runtime: resume, state:%d\n",
+		__func__, swrm->state);
 	mutex_lock(&swrm->reslock);
 
 	if (swrm_request_hw_vote(swrm, LPASS_HW_CORE, true)) {
@@ -3043,6 +3096,9 @@ static int swrm_runtime_resume(struct device *dev)
 					dev_dbg(dev,
 						"%s slave device up not implemented\n",
 						__func__);
+					trace_printk(
+						"%s slave device up not implemented\n",
+						__func__);
 					ret = 0;
 				} else if (ret) {
 					dev_err(dev,
@@ -3088,16 +3144,16 @@ static int swrm_runtime_resume(struct device *dev)
 exit:
 	if (!hw_core_err)
 		swrm_request_hw_vote(swrm, LPASS_HW_CORE, false);
-	if (swrm_clk_req_err)
+	if (swrm_clk_req_err || hw_core_err)
 		pm_runtime_set_autosuspend_delay(&pdev->dev,
 				ERR_AUTO_SUSPEND_TIMER_VAL);
 	else
 		pm_runtime_set_autosuspend_delay(&pdev->dev,
 				auto_suspend_timer);
-	if (swrm->req_clk_switch)
-		swrm->req_clk_switch = false;
 	mutex_unlock(&swrm->reslock);
 
+	trace_printk("%s: pm_runtime: resume done, state:%d\n",
+		__func__, swrm->state);
 	return ret;
 }
 
@@ -3112,8 +3168,14 @@ static int swrm_runtime_suspend(struct device *dev)
 	int current_state = 0;
 	struct irq_data *irq_data = NULL;
 
+	trace_printk("%s: pm_runtime: suspend state: %d\n",
+		__func__, swrm->state);
 	dev_dbg(dev, "%s: pm_runtime: suspend state: %d\n",
 		__func__, swrm->state);
+	if (swrm->state == SWR_MSTR_SSR_RESET) {
+		swrm->state = SWR_MSTR_SSR;
+		return 0;
+	}
 	mutex_lock(&swrm->reslock);
 	mutex_lock(&swrm->force_down_lock);
 	current_state = swrm->state;
@@ -3131,6 +3193,7 @@ static int swrm_runtime_suspend(struct device *dev)
 		if ((current_state != SWR_MSTR_SSR) &&
 			swrm_is_port_en(&swrm->master)) {
 			dev_dbg(dev, "%s ports are enabled\n", __func__);
+			trace_printk("%s ports are enabled\n", __func__);
 			ret = -EBUSY;
 			goto exit;
 		}
@@ -3164,14 +3227,22 @@ static int swrm_runtime_suspend(struct device *dev)
 					dev_dbg_ratelimited(dev,
 						"%s slave device down not implemented\n",
 						 __func__);
+					trace_printk(
+						"%s slave device down not implemented\n",
+						 __func__);
 					ret = 0;
 				} else if (ret) {
 					dev_err(dev,
 						"%s: failed to shutdown swr dev %d\n",
 						__func__, swr_dev->dev_num);
+					trace_printk(
+						"%s: failed to shutdown swr dev %d\n",
+						__func__, swr_dev->dev_num);
 					goto exit;
 				}
 			}
+			trace_printk("%s: clk stop mode not supported or SSR exit\n",
+				__func__);
 		} else {
 			/* Mask bus clash interrupt */
 			swrm->intr_mask &= ~((u32)0x08);
@@ -3221,6 +3292,8 @@ exit:
 	if (!hw_core_err)
 		swrm_request_hw_vote(swrm, LPASS_HW_CORE, false);
 	mutex_unlock(&swrm->reslock);
+	trace_printk("%s: pm_runtime: suspend done state: %d\n",
+		__func__, swrm->state);
 	return ret;
 }
 #endif /* CONFIG_PM */
@@ -3232,6 +3305,7 @@ static int swrm_device_suspend(struct device *dev)
 	int ret = 0;
 
 	dev_dbg(dev, "%s: swrm state: %d\n", __func__, swrm->state);
+	trace_printk("%s: swrm state: %d\n", __func__, swrm->state);
 	if (!pm_runtime_enabled(dev) || !pm_runtime_suspended(dev)) {
 		ret = swrm_runtime_suspend(dev);
 		if (!ret) {
@@ -3250,6 +3324,7 @@ static int swrm_device_down(struct device *dev)
 	struct swr_mstr_ctrl *swrm = platform_get_drvdata(pdev);
 
 	dev_dbg(dev, "%s: swrm state: %d\n", __func__, swrm->state);
+	trace_printk("%s: swrm state: %d\n", __func__, swrm->state);
 
 	mutex_lock(&swrm->force_down_lock);
 	swrm->state = SWR_MSTR_SSR;
@@ -3386,12 +3461,8 @@ int swrm_wcd_notify(struct platform_device *pdev, u32 id, void *data)
 		}
 		mutex_lock(&swrm->mlock);
 		if (swrm->clk_src != *(int *)data) {
-			if (swrm->state == SWR_MSTR_UP) {
-				swrm->req_clk_switch = true;
+			if (swrm->state == SWR_MSTR_UP)
 				swrm_device_suspend(&pdev->dev);
-				if (swrm->state == SWR_MSTR_UP)
-					swrm->req_clk_switch = false;
-			}
 			swrm->clk_src = *(int *)data;
 		}
 		mutex_unlock(&swrm->mlock);
@@ -3427,6 +3498,7 @@ int swrm_wcd_notify(struct platform_device *pdev, u32 id, void *data)
 		}
 		break;
 	case SWR_DEVICE_SSR_DOWN:
+		trace_printk("%s: swr device down called\n", __func__);
 		mutex_lock(&swrm->mlock);
 		if (swrm->state == SWR_MSTR_DOWN)
 			dev_dbg(swrm->dev, "%s:SWR master is already Down:%d\n",
@@ -3445,6 +3517,7 @@ int swrm_wcd_notify(struct platform_device *pdev, u32 id, void *data)
 		break;
 	case SWR_DEVICE_SSR_UP:
 		/* wait for clk voting to be zero */
+		trace_printk("%s: swr device up  called\n", __func__);
 		reinit_completion(&swrm->clk_off_complete);
 		if (swrm->clk_ref_count &&
 			 !wait_for_completion_timeout(&swrm->clk_off_complete,
@@ -3452,12 +3525,25 @@ int swrm_wcd_notify(struct platform_device *pdev, u32 id, void *data)
 			dev_err(swrm->dev, "%s: clock voting not zero\n",
 				__func__);
 
+		if (swrm->state == SWR_MSTR_UP ||
+			pm_runtime_autosuspend_expiration(swrm->dev)) {
+			swrm->state = SWR_MSTR_SSR_RESET;
+			dev_dbg(swrm->dev,
+				"%s:suspend swr if active at SSR up\n",
+				__func__);
+			pm_runtime_set_autosuspend_delay(swrm->dev,
+				ERR_AUTO_SUSPEND_TIMER_VAL);
+			usleep_range(50000, 50100);
+			swrm->state = SWR_MSTR_SSR;
+		}
+
 		mutex_lock(&swrm->devlock);
 		swrm->dev_up = true;
 		mutex_unlock(&swrm->devlock);
 		break;
 	case SWR_DEVICE_DOWN:
 		dev_dbg(swrm->dev, "%s: swr master down called\n", __func__);
+		trace_printk("%s: swr master down called\n", __func__);
 		mutex_lock(&swrm->mlock);
 		if (swrm->state == SWR_MSTR_DOWN)
 			dev_dbg(swrm->dev, "%s:SWR master is already Down:%d\n",
@@ -3468,6 +3554,7 @@ int swrm_wcd_notify(struct platform_device *pdev, u32 id, void *data)
 		break;
 	case SWR_DEVICE_UP:
 		dev_dbg(swrm->dev, "%s: swr master up called\n", __func__);
+		trace_printk("%s: swr master up called\n", __func__);
 		mutex_lock(&swrm->devlock);
 		if (!swrm->dev_up) {
 			dev_dbg(swrm->dev, "SSR not complete yet\n");

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 
@@ -3846,9 +3846,9 @@ static int msm_compr_playback_app_type_cfg_put(struct snd_kcontrol *kcontrol,
 	if (ucontrol->value.integer.value[2] != 0)
 		cfg_data.sample_rate = ucontrol->value.integer.value[2];
 	cfg_data.channel = ucontrol->value.integer.value[4];
-	pr_debug("%s: fe_id- %llu session_type- %d be_id- %d app_type- %d acdb_dev_id- %d sample_rate- %d\n",
+	pr_debug("%s: fe_id- %llu session_type- %d be_id- %d app_type- %d acdb_dev_id- %d sample_rate- %d, channel is %d\n",
 		__func__, fe_id, session_type, be_id,
-		cfg_data.app_type, cfg_data.acdb_dev_id, cfg_data.sample_rate);
+		cfg_data.app_type, cfg_data.acdb_dev_id, cfg_data.sample_rate, cfg_data.channel);
 	ret = msm_pcm_routing_reg_stream_app_type_cfg(fe_id, session_type,
 						      be_id, &cfg_data);
 	if (ret < 0)
@@ -3880,9 +3880,9 @@ static int msm_compr_playback_app_type_cfg_get(struct snd_kcontrol *kcontrol,
 	ucontrol->value.integer.value[2] = cfg_data.sample_rate;
 	ucontrol->value.integer.value[3] = be_id;
 	ucontrol->value.integer.value[4] = cfg_data.channel;
-	pr_debug("%s: fedai_id %llu, session_type %d, be_id %d, app_type %d, acdb_dev_id %d, sample_rate %d\n",
+	pr_debug("%s: fedai_id %llu, session_type %d, be_id %d, app_type %d, acdb_dev_id %d, sample_rate %d, channel is %d\n",
 		__func__, fe_id, session_type, be_id,
-		cfg_data.app_type, cfg_data.acdb_dev_id, cfg_data.sample_rate);
+		cfg_data.app_type, cfg_data.acdb_dev_id, cfg_data.sample_rate, cfg_data.channel);
 done:
 	return ret;
 }
@@ -3952,7 +3952,7 @@ static int msm_compr_channel_map_put(struct snd_kcontrol *kcontrol,
 
 	pr_debug("%s: fe_id- %llu\n", __func__, fe_id);
 
-	if (fe_id >= MSM_FRONTEND_DAI_MAX) {
+	if (fe_id >= MSM_FRONTEND_DAI_MM_SIZE) {
 		pr_err("%s Received out of bounds fe_id %llu\n",
 			__func__, fe_id);
 		rc = -EINVAL;
@@ -3994,7 +3994,7 @@ static int msm_compr_channel_map_get(struct snd_kcontrol *kcontrol,
 	int rc = 0, i;
 
 	pr_debug("%s: fe_id- %llu\n", __func__, fe_id);
-	if (fe_id >= MSM_FRONTEND_DAI_MAX) {
+	if (fe_id >= MSM_FRONTEND_DAI_MM_SIZE) {
 		pr_err("%s: Received out of bounds fe_id %llu\n",
 			__func__, fe_id);
 		rc = -EINVAL;
