@@ -44,8 +44,8 @@ jobs:
         run: |
           mkdir -p $HOME/zyc-clang
           cd $HOME/zyc-clang
-          wget -q https://github.com/ZyCromerZ/Clang/releases/download/15.0.7-20251111-release/Clang-15.0.7-20251111.tar.gz
-          tar -zxvf Clang-15.0.7-20251111.tar.gz
+          wget -q https://github.com/ZyCromerZ/Clang/releases/download/15.0.7-20260208-release/Clang-15.0.7-20260208.tar.gz
+          tar -zxvf Clang-15.0.7-20260208.tar.gz
 
       - name: Run Build Script
         run: |
