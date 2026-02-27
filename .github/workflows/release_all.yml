@@ -99,7 +99,7 @@ jobs:
             **分类指南 / Instruction:**
             - **MIUI**: 适用于小米官方或基于小米官方修改的 ROM。
             - **AOSP**: 适用于类原生 ROM (LineageOS, Pixel Experience 等)。
-            - **SukiSU-SUSFS**: 已集成 ReSukiSU 和 SuSFS 补丁。
+            - **ReSukiSU**: 已集成 ReSukiSU。
           files: all_kernels/*.zip
 
       - name: Send Files to Telegram
