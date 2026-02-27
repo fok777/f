@@ -122,16 +122,6 @@ if [ $KSU_ENABLE -eq 1 ]; then
     scripts/config --file out/.config \
     -e KSU \
     -e KSU_MANUAL_HOOK \
-    -d KSU_SUSFS \
-    -d KSU_SUSFS_SUS_PATH \
-    -d KSU_SUSFS_SUS_MOUNT \
-    -d KSU_SUSFS_SUS_KSTAT \
-    -d KSU_SUSFS_SPOOF_UNAME \
-    -d KSU_SUSFS_ENABLE_LOG \
-    -d KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
-    -d KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
-    -d KSU_SUSFS_OPEN_REDIRECT \
-    -d KSU_SUSFS_SUS_MAP \
     -e THREAD_INFO_IN_TASK \
     -e KPM
 else
@@ -158,7 +148,7 @@ mkdir -p anykernel/kernels/
 # Patch for SukiSU KPM support. 
 if [ $KSU_ENABLE -eq 1 ]; then
     cd out/arch/arm64/boot/
-    wget https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/0.12.2/patch_linux
+    wget https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/0.13.0/patch_linux
     chmod +x patch_linux
     ./patch_linux
     rm Image
@@ -257,16 +247,6 @@ if [ $KSU_ENABLE -eq 1 ]; then
     scripts/config --file out/.config \
     -e KSU \
     -e KSU_MANUAL_HOOK \
-    -d KSU_SUSFS \
-    -d KSU_SUSFS_SUS_PATH \
-    -d KSU_SUSFS_SUS_MOUNT \
-    -d KSU_SUSFS_SUS_KSTAT \
-    -d KSU_SUSFS_SPOOF_UNAME \
-    -d KSU_SUSFS_ENABLE_LOG \
-    -d KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
-    -d KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
-    -d KSU_SUSFS_OPEN_REDIRECT \
-    -d KSU_SUSFS_SUS_MAP \
     -e THREAD_INFO_IN_TASK \
     -e KPM
 else
@@ -327,7 +307,7 @@ mkdir -p anykernel/kernels/
 # Patch for SukiSU KPM support. 
 if [ $KSU_ENABLE -eq 1 ]; then
     cd out/arch/arm64/boot/
-    wget https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/0.12.2/patch_linux
+    wget https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/0.13.0/patch_linux
     chmod +x patch_linux
     ./patch_linux
     rm Image
