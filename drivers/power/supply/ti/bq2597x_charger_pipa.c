@@ -34,7 +34,6 @@
 #include <linux/debugfs.h>
 #include <linux/bitops.h>
 #include <linux/math64.h>
-#include <asm/neon.h>
 #include "bq25970_reg.h"
 /*#include "bq2597x.h"*/
 
@@ -57,7 +56,7 @@ enum {
 	ADC_MAX_NUM,
 };
 
-static float sc8551_adc_lsb[] = {
+static int sc8551_adc_lsb[] = {
 	[ADC_IBUS]	= SC8551_IBUS_ADC_LSB,
 	[ADC_VBUS]	= SC8551_VBUS_ADC_LSB,
 	[ADC_VAC]	= SC8551_VAC_ADC_LSB,
