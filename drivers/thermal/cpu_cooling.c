@@ -129,7 +129,7 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
 	struct cpufreq_cooling_device *cpufreq_cdev;
 
 #ifndef CONFIG_BOARD_XIAOMI
- 	if (event != CPUFREQ_INCOMPATIBLE)
+	if (event != CPUFREQ_INCOMPATIBLE)
 #else
 	if (event != CPUFREQ_THERMAL)
 #endif
@@ -406,18 +406,11 @@ static int cpufreq_set_min_state(struct thermal_cooling_device *cdev,
 	 * can handle the CPU freq mitigation, if not, notify cpufreq
 	 * framework.
 	 */
-	if (USE_LMH_DEV && cpufreq_cdev->plat_ops &&
-		cpufreq_cdev->plat_ops->ceil_limit) {
- 		cpufreq_cdev->plat_ops->ceil_limit(cpufreq_cdev->policy->cpu,
- 							clip_freq);
-		get_online_cpus();
- 		cpufreq_update_policy(cpufreq_cdev->policy->cpu);
-		put_online_cpus();
-	} else {
-		get_online_cpus();
-		cpufreq_update_policy(cpufreq_cdev->policy->cpu);
-		put_online_cpus();
-	}
+	if (cpufreq_cdev->plat_ops &&
+		cpufreq_cdev->plat_ops->floor_limit)
+		cpufreq_cdev->plat_ops->floor_limit(cpu, floor_freq);
+	else
+		cpufreq_update_policy(cpu);
 
 	return 0;
 }
@@ -454,9 +447,18 @@ static int cpufreq_set_cur_state(struct thermal_cooling_device *cdev,
 	 * can handle the CPU freq mitigation, if not, notify cpufreq
 	 * framework.
 	 */
-	get_online_cpus();
-	cpufreq_update_policy(cpufreq_cdev->policy->cpu);
-	put_online_cpus();
+	if (USE_LMH_DEV && cpufreq_cdev->plat_ops &&
+		cpufreq_cdev->plat_ops->ceil_limit) {
+		cpufreq_cdev->plat_ops->ceil_limit(cpufreq_cdev->policy->cpu,
+							clip_freq);
+		get_online_cpus();
+		cpufreq_update_policy(cpufreq_cdev->policy->cpu);
+		put_online_cpus();
+	} else {
+		get_online_cpus();
+		cpufreq_update_policy(cpufreq_cdev->policy->cpu);
+		put_online_cpus();
+	}
 
 	return 0;
 }
@@ -557,7 +559,7 @@ static int cpufreq_state2power(struct thermal_cooling_device *cdev,
 
 	/* Request state should be less than max_level */
 	if (WARN_ON(state > cpufreq_cdev->max_level))
-		return cpufreq_cdev->max_level;
+		return -EINVAL;
 
 	num_cpus = cpumask_weight(cpufreq_cdev->policy->cpus);
 
