@@ -228,6 +228,9 @@ scripts/config --file out/.config \
     -e MI_RECLAIM \
     -e RTMM \
 
+export LOCALVERSION="-g92c089fc2d37"
+export KBUILD_BUILD_TIMESTAMP="Wed Oct 29 11:41:46 UTC 2025"
+
 make $MAKE_ARGS -j$(nproc)
 
 
