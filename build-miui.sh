@@ -207,7 +207,6 @@ scripts/config --file out/.config \
     -e PERF_CRITICAL_RT_TASK	\
     -e SF_BINDER		\
     -e OVERLAY_FS		\
-    -d DEBUG_FS \
     -e MIGT \
     -e MIGT_ENERGY_MODEL \
     -e MIHW \
@@ -217,13 +216,12 @@ scripts/config --file out/.config \
     -e MILLET \
     -e PERF_HUMANTASK \
     -d LTO_CLANG \
+    -e LTO_NONE \
     -e SF_BINDER \
     -e XIAOMI_MIUI \
     -d MI_MEMORY_SYSFS \
     -e TASK_DELAY_ACCT \
     -e MIUI_ZRAM_MEMORY_TRACKING \
-    -d CONFIG_MODULE_SIG_SHA512 \
-    -d CONFIG_MODULE_SIG_HASH \
     -e MI_FRAGMENTION \
     -e PERF_HELPER \
     -e BOOTUP_RECLAIM \
@@ -233,8 +231,6 @@ scripts/config --file out/.config \
     -d REKERNEL_NETWORK
 
 make $MAKE_ARGS -j$(nproc)
-
-
 
 if [ -f "out/arch/arm64/boot/Image" ]; then
     echo "The file [out/arch/arm64/boot/Image] exists. MIUI Build successfully."
