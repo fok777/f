@@ -160,8 +160,8 @@ Join ApartTUSITU's QQ Group: [700675046](https://qm.qq.com/q/Md7nXA3Toa)。
    ```
    mkdir zyc-clang
    cd zyc-clang
-   wget https://github.com/ZyCromerZ/Clang/releases/download/15.0.7-20260507-release/Clang-15.0.7-20260507.tar.gz
-   tar -zxvf Clang-15.0.7-20260507.tar.gz
+   wget https://github.com/ZyCromerZ/Clang/releases/download/16.0.6-20260510-release/Clang-16.0.6-20260510.tar.gz
+   tar -zxvf Clang-16.0.6-20260510.tar.gz
    cd ..
    ```
 
@@ -211,8 +211,8 @@ Join ApartTUSITU's QQ Group: [700675046](https://qm.qq.com/q/Md7nXA3Toa)。
    ```
    mkdir zyc-clang
    cd zyc-clang
-   wget https://github.com/ZyCromerZ/Clang/releases/download/15.0.7-20260507-release/Clang-15.0.7-20260507.tar.gz
-   tar -zxvf Clang-15.0.7-20260507.tar.gz
+   wget https://github.com/ZyCromerZ/Clang/releases/download/16.0.6-20260510-release/Clang-16.0.6-20260510.tar.gz
+   tar -zxvf Clang-16.0.6-20260510.tar.gz
    cd ..
    ```
 
