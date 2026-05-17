@@ -79,22 +79,66 @@ jobs:
         tar -zxvf Clang-16.0.6-20260510.tar.gz
 
     - name: Build Kernel
+      id: build
       run: |
         chmod +x build.sh build-miui.sh
         
         echo "Using script: ${{ inputs.script }}"
-
+        LOG_FILE="build.log"
+        
         if [ "${{ inputs.ksu }}" == "true" ]; then
           echo "Building with KernelSU..."
-          bash ${{ inputs.script }} ${{ inputs.device }} ksu
+          bash ${{ inputs.script }} ${{ inputs.device }} ksu | tee $LOG_FILE
         else
           echo "Building without KernelSU..."
-          bash ${{ inputs.script }} ${{ inputs.device }}
+          bash ${{ inputs.script }} ${{ inputs.device }} | tee $LOG_FILE
         fi
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v6
       with:
         name: Kernel-${{ inputs.device }}-${{ inputs.script }}-${{ inputs.ksu && 'KSU' || 'NoKSU' }}-${{ github.run_number }}
-        path: ./*.zip
+        path: |
+          ./*.zip
+          build.log
         if-no-files-found: error
+
+    - name: Send Kernel & Log to Telegram
+      if: success()
+      env:
+        BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        KERNEL_ZIP=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+        LOG_FILE="build.log"
+        RUN_ID=${{ github.run_id }}
+        REPO_URL="https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
+
+        if [ -z "$KERNEL_ZIP" ]; then
+          echo "❌ Kernel zip not found"
+          exit 1
+        fi
+
+        CAPTION="🚀 *Kernel Build Success*
+
+        📱 *Device:* \`${{ inputs.device }}\`
+        🛠️*Script:* \`${{ inputs.script }}\`
+        🧩 *KernelSU:* \`${{ inputs.ksu && 'Enabled' || 'Disabled' }}\`
+        🔢 *Run:* \`#${{ github.run_number }}\`
+
+        📥 *Download:*
+        [Kernel ZIP & Logs]($REPO_URL)"
+
+        # Send Kernel ZIP
+        curl -F chat_id="$CHAT_ID" \
+             -F document=@"$KERNEL_ZIP" \
+             -F caption="$CAPTION" \
+             -F parse_mode="Markdown" \
+             https://api.telegram.org/bot$BOT_TOKEN/sendDocument
+
+        # Send Build Log
+        curl -F chat_id="$CHAT_ID" \
+             -F document=@"$LOG_FILE" \
+             -F caption="📄 *Build Log*" \
+             -F parse_mode="Markdown" \
+             https://api.telegram.org/bot$BOT_TOKEN/sendDocument
