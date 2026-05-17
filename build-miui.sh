@@ -49,13 +49,29 @@ fi
 
 # Enable ccache for speed up compiling 
 export CCACHE_DIR="$HOME/.cache/ccache_mikernel" 
-export CC="ccache gcc"
-export CXX="ccache g++"
+export CC="clang"
+export CXX="clang++"
 export PATH="/usr/lib/ccache:$PATH"
+export CCACHE_COMPILERCHECK=content
+export CCACHE_SLOPPINESS=time_macros,include_file_mtime,include_file_ctime
 echo "CCACHE_DIR: [$CCACHE_DIR]"
 
 
-MAKE_ARGS="ARCH=arm64 SUBARCH=arm64 O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- CLANG_TRIPLE=aarch64-linux-gnu-"
+MAKE_ARGS="ARCH=arm64 \
+           SUBARCH=arm64 \
+           O=out \
+           CC=clang \
+           HOSTCC=clang \
+           CLANG_TRIPLE=aarch64-linux-gnu- \
+           CROSS_COMPILE=aarch64-linux-gnu- \
+           CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+           CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+           LD=ld.lld \
+           AR=llvm-ar \
+           NM=llvm-nm \
+           OBJCOPY=llvm-objcopy \
+           OBJDUMP=llvm-objdump \
+           STRIP=llvm-strip"
 
 
 if [ "$1" == "j1" ]; then
@@ -199,13 +215,14 @@ else
     scripts/config --file out/.config -d KSU
 fi
 
+scripts/config --file out/.config \
+    -e BBG
 
 scripts/config --file out/.config \
     --set-str STATIC_USERMODEHELPER_PATH /system/bin/micd \
     -e PERF_CRITICAL_RT_TASK	\
     -e SF_BINDER		\
     -e OVERLAY_FS		\
-    -d DEBUG_FS \
     -e MIGT \
     -e MIGT_ENERGY_MODEL \
     -e MIHW \
@@ -215,25 +232,24 @@ scripts/config --file out/.config \
     -e MILLET \
     -e PERF_HUMANTASK \
     -d LTO_CLANG \
+    -e LTO_NONE \
     -e SF_BINDER \
     -e XIAOMI_MIUI \
     -d MI_MEMORY_SYSFS \
     -e TASK_DELAY_ACCT \
     -e MIUI_ZRAM_MEMORY_TRACKING \
-    -d CONFIG_MODULE_SIG_SHA512 \
-    -d CONFIG_MODULE_SIG_HASH \
     -e MI_FRAGMENTION \
     -e PERF_HELPER \
     -e BOOTUP_RECLAIM \
     -e MI_RECLAIM \
     -e RTMM \
+    -d REKERNEL \
+    -d REKERNEL_NETWORK
 
 export LOCALVERSION="-g92c089fc2d37"
 export KBUILD_BUILD_TIMESTAMP="Wed Oct 29 11:41:46 UTC 2025"
 
 make $MAKE_ARGS -j$(nproc)
-
-
 
 if [ -f "out/arch/arm64/boot/Image" ]; then
     echo "The file [out/arch/arm64/boot/Image] exists. MIUI Build successfully."
