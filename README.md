@@ -156,7 +156,7 @@ Join ApartTUSITU's QQ Group: [700675046](https://qm.qq.com/q/Md7nXA3Toa)。
 
    注意：`build.sh` 中启用了 `ccache`，路径是 `$HOME/.cache/ccache_mikernel`。可修改或删除。  
 
-2. 下载 [ZyC-Clang v15](https://github.com/ZyCromerZ/Clang/releases/tag/15.0.7-20260507-release) 工具链:  
+2. 下载 [ZyC-Clang v16](https://github.com/ZyCromerZ/Clang/releases/tag/16.0.6-20260510-release) 工具链:  
    ```
    mkdir zyc-clang
    cd zyc-clang
@@ -207,7 +207,7 @@ Join ApartTUSITU's QQ Group: [700675046](https://qm.qq.com/q/Md7nXA3Toa)。
 
    Note: `ccache` is enabled in `build.sh` (`$HOME/.cache/ccache_mikernel`). You may remove/modify it.  
 
-2. Download [ZyC-Clang v15](https://github.com/ZyCromerZ/Clang/releases/tag/15.0.7-20260507-release) toolchain:  
+2. Download [ZyC-Clang v16](https://github.com/ZyCromerZ/Clang/releases/tag/16.0.6-20260510-release) toolchain:  
    ```
    mkdir zyc-clang
    cd zyc-clang
