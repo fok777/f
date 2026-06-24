@@ -272,6 +272,9 @@ dev_t name_to_dev_t(const char *name)
 
 	if (strlen(name) > 31)
 		goto fail;
+    if (strncmp(name, "block/", 6) == 0) {
+        name += 6;
+    }
 	strcpy(s, name);
 	for (p = s; *p; p++)
 		if (*p == '/')
