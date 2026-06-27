@@ -75,7 +75,6 @@ jobs:
       run: |
         chmod +x build_kernel.sh
         
-        # 组装命令行参数
         ARGS="${{ github.event.inputs.device }}"
         
         if [ "${{ github.event.inputs.ksu }}" == "true" ]; then
