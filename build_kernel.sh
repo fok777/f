@@ -74,11 +74,38 @@ ccache -M 50G >/dev/null 2>&1 || true
 # ==========================================
 if [ "$ENABLE_KSU" -eq 1 ]; then
     echo "==========================================="
-    echo " [*] Initializing KernelSU Setup"
+    echo " [*] Initializing KernelSU (ReSukiSU) Setup"
     echo "==========================================="
+    echo "[*] Downloading and running ReSukiSU remote setup script..."
     curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash
     echo "[+] KernelSU setup finished."
 fi
+
+# ==========================================
+# Baseband-guard Setup
+# ==========================================
+echo "==========================================="
+echo " [*] Initializing Baseband-guard Setup"
+echo "==========================================="
+echo "[*] Downloading and running Baseband-guard remote setup script..."
+wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
+
+echo "[*] Patching security/Kconfig for baseband_guard..."
+sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' security/Kconfig
+echo "[+] Baseband-guard setup finished."
+echo "==========================================="
+
+# ==========================================
+# AnyKernel3 Setup
+# ==========================================
+echo "==========================================="
+echo " [*] Initializing AnyKernel3 Workspace"
+echo "==========================================="
+rm -rf anykernel
+echo "[*] Cloning AnyKernel3..."
+git clone https://github.com/AstideLabs/AnyKernel3 -b master --single-branch --depth=1 anykernel
+echo "[+] AnyKernel3 cloned successfully."
+echo "==========================================="
 
 # ==========================================
 # Modular Build Function
@@ -167,7 +194,15 @@ build_target() {
     echo "[*] Making defconfig: ${DEFCONFIG}..."
     make "${MAKE_OPTS[@]}" "${DEFCONFIG}"
 
-    # Base configuration tweaks for KernelSU
+    # ----------------------------------------------------
+    # Configuration tweaks
+    # ----------------------------------------------------
+    
+    # 1. Baseband-guard configuration (Always applied)
+    echo "[*] Injecting Baseband-guard configuration..."
+    scripts/config --file "${OUT_DIR}/.config" -e BBG
+
+    # 2. KernelSU configurations
     if [ "$ENABLE_KSU" -eq 1 ]; then
         echo "[*] Injecting KernelSU & SUSFS configurations..."
         scripts/config --file "${OUT_DIR}/.config" \
@@ -176,7 +211,7 @@ build_target() {
             -e KSU_SUSFS
     fi
 
-    # Extra configuration tweaks for MIUI
+    # 3. MIUI configurations
     if [ "$OS_TYPE" == "miui" ]; then
         echo "[*] Injecting MIUI specific configurations..."
         scripts/config --file "${OUT_DIR}/.config" \
@@ -206,12 +241,13 @@ build_target() {
             -d REKERNEL_NETWORK
     fi
 
-    # Update config only if we modified it
-    if [ "$ENABLE_KSU" -eq 1 ] || [ "$OS_TYPE" == "miui" ]; then
-        echo "[*] Updating config (make olddefconfig)..."
-        make "${MAKE_OPTS[@]}" olddefconfig
-    fi
+    # We always need to re-evaluate dependencies because BBG is injected unconditionally
+    echo "[*] Updating config (make olddefconfig)..."
+    make "${MAKE_OPTS[@]}" olddefconfig
 
+    # ----------------------------------------------------
+    # Compilation
+    # ----------------------------------------------------
     echo "[*] Building kernel..."
     make "${MAKE_OPTS[@]}" 
 
@@ -227,12 +263,37 @@ build_target() {
         echo "[+] $OS_TYPE Build Successful!"
         echo "[+] Kernel Image path: ${OUT_DIR}/arch/arm64/boot/Image"
         
-        if [ -f "${OUT_DIR}/arch/arm64/boot/Image.gz" ]; then
-            echo "[+] Image.gz path: ${OUT_DIR}/arch/arm64/boot/Image.gz"
+        echo "[*] Generating dtb..."
+        find "${OUT_DIR}/arch/arm64/boot/dts" -name '*.dtb' -exec cat {} + > "${OUT_DIR}/arch/arm64/boot/dtb"
+
+        echo "[*] Packaging to AnyKernel3 ($OS_TYPE)..."
+        # 确保独立打包：清空现有的 kernels 目录
+        rm -rf anykernel/kernels/*
+        mkdir -p "anykernel/kernels/${OS_TYPE}/"
+        
+        cp "${OUT_DIR}/arch/arm64/boot/Image" "anykernel/kernels/${OS_TYPE}/"
+        cp "${OUT_DIR}/arch/arm64/boot/dtb" "anykernel/kernels/${OS_TYPE}/"
+        
+        if [ -f "${OUT_DIR}/arch/arm64/boot/dtbo.img" ]; then
+            cp "${OUT_DIR}/arch/arm64/boot/dtbo.img" "anykernel/kernels/${OS_TYPE}/"
         fi
-        if [ -f "${OUT_DIR}/arch/arm64/boot/Image.gz-dtb" ]; then
-            echo "[+] Image.gz-dtb path: ${OUT_DIR}/arch/arm64/boot/Image.gz-dtb"
+        
+        # 确定 ZIP 文件名
+        local KSU_ZIP_STR="NoKernelSU"
+        if [ "$ENABLE_KSU" -eq 1 ]; then
+            KSU_ZIP_STR="ReSukiSU-SuSFS"
         fi
+        local GIT_COMMIT_ID=$(git rev-parse --short=8 HEAD 2>/dev/null || echo "unknown")
+        local OS_UPPER=$(echo "$OS_TYPE" | tr '[:lower:]' '[:upper:]')
+        local ZIP_FILENAME="APTKernel_${OS_UPPER}_${DEVICE_NAME}_${KSU_ZIP_STR}_$(date +'%Y%m%d_%H%M%S')_anykernel3_${GIT_COMMIT_ID}.zip"
+        
+        echo "[*] Zipping $ZIP_FILENAME ..."
+        pushd anykernel > /dev/null
+        zip -r9 "$ZIP_FILENAME" ./* -x .git .gitignore out/ ./*.zip > /dev/null
+        mv "$ZIP_FILENAME" ../
+        popd > /dev/null
+        
+        echo "[+] $OS_TYPE kernel binaries successfully packed into: $ZIP_FILENAME"
     else
         echo "[-] $OS_TYPE Build Failed. Kernel Image not found."
         exit 1
