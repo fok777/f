@@ -28,5 +28,7 @@ jobs:
           git fetch upstream ${{ matrix.branch }}
           git checkout ${{ matrix.branch }} 2>/dev/null || git checkout -b ${{ matrix.branch }} upstream/${{ matrix.branch }}
           git reset --hard upstream/${{ matrix.branch }}
+      - run: |
+          git remote set-url origin https://x-access-token:${{ secrets.cctv77 }}@github.com/cctv77/Fraud.git
           git push --force origin ${{ matrix.branch }}
           git push origin --tags
