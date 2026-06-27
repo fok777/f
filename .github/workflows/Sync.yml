@@ -1,0 +1,32 @@
+name: Sync Upstream
+on:
+  schedule:
+    - cron: "0 2 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: write
+env:
+  UPSTREAM_OWNER: "AstideLabs"
+  UPSTREAM_REPO: "android_kernel_xiaomi_sm8250"
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch: ["android16-aptusitu", "android16-aptusitu-new"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+        continue-on-error: true
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - run: |
+          git remote add upstream https://github.com/${{ env.UPSTREAM_OWNER }}/${{ env.UPSTREAM_REPO }}.git || true
+          git fetch upstream ${{ matrix.branch }}
+          git checkout ${{ matrix.branch }} 2>/dev/null || git checkout -b ${{ matrix.branch }} upstream/${{ matrix.branch }}
+          git reset --hard upstream/${{ matrix.branch }}
+          git push --force origin ${{ matrix.branch }}
+          git push origin --tags
