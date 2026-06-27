@@ -135,4 +135,5 @@ all.config
 # fetched Android config fragments
 kernel/configs/android-*.cfg
 
-out/
+out_aosp/
+out_miui/
