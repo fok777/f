@@ -67,7 +67,6 @@ clang --version || { echo "[!] Clang not found at ${TOOLCHAIN_BIN}. Please check
 
 echo "[*] Setting up ccache in $CCACHE_DIR..."
 mkdir -p "$CCACHE_DIR"
-ccache -M 50G >/dev/null 2>&1 || true
 
 # ==========================================
 # KernelSU Setup
