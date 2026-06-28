@@ -246,6 +246,9 @@ scripts/config --file out/.config \
     -d REKERNEL \
     -d REKERNEL_NETWORK
 
+export LOCALVERSION="-g92c089fc2d37"
+export KBUILD_BUILD_TIMESTAMP="Wed Oct 29 11:41:46 UTC 2025"
+
 make $MAKE_ARGS -j$(nproc)
 
 if [ -f "out/arch/arm64/boot/Image" ]; then
@@ -289,7 +292,7 @@ echo "Build for MIUI finished."
 
 cd anykernel 
 
-ZIP_FILENAME=APTKernel_MIUI_${TARGET_DEVICE}_${KSU_ZIP_STR}_$(date +'%Y%m%d_%H%M%S')_anykernel3_${GIT_COMMIT_ID}.zip
+ZIP_FILENAME=k40_Kernel_MIUI_${TARGET_DEVICE}_${KSU_ZIP_STR}_$(date +'%Y%m%d_%H%M%S')_anykernel3_${GIT_COMMIT_ID}.zip
 
 zip -r9 $ZIP_FILENAME ./* -x .git .gitignore out/ ./*.zip
 
