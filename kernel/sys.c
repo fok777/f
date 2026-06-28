@@ -1264,12 +1264,17 @@ SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
 	if (static_branch_likely(&susfs_is_uname_spoof_buffer_set))
 		susfs_spoof_uname(&tmp);
 #endif
+	/* For certain userspace helpers that require a specific kernel
+	 * release string, spoof the release to match this kernel's
+	 * compiled UTS_RELEASE so detection tools see the actual version
+	 * instead of an unrelated hardcoded value.
+	 */
 	if (!strncmp(current->comm, "bpfloader", 9) ||
 	    !strncmp(current->comm, "netbpfload", 10) ||
-	    !strncmp(current->comm, "netd", 4) ||
-	    !strncmp(current->comm, "uprobestats", 11)) {
-		strcpy(tmp.release, "5.10.248");
-		pr_debug("fake uname: %s release=%s\n",
+		!strncmp(current->comm, "netd", 4) ||
+		!strncmp(current->comm, "uprobestats", 11)) {
+		strlcpy(tmp.release, UTS_RELEASE, sizeof(tmp.release));
+		pr_debug("fake uname (UTS_RELEASE): %s release=%s\n",
 			 current->comm, tmp.release);
 	}
 	up_read(&uts_sem);
