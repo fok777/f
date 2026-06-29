@@ -48,6 +48,8 @@ TOOLCHAIN_BIN="$HOME/zyc-clang/bin"
 export PATH="${TOOLCHAIN_BIN}:${PATH}"
 export ARCH="arm64"
 export SUBARCH="arm64"
+export LOCALVERSION="-g92c089fc2d37"
+export KBUILD_BUILD_TIMESTAMP="Wed Oct 29 11:41:46 UTC 2025"
 
 # ccache Setup
 export CCACHE_DIR="$HOME/.cache/ccache_mikernel"
