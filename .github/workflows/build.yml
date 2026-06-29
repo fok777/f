@@ -1,5 +1,5 @@
 name: Sync Upstream
-on:
+于:
   schedule:
     - cron: "0 2 * * 1"
   workflow_dispatch:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        branch: ["android16-aptusitu", "android16-aptusitu-new"]
+        分支: ["android16-aptusitu", "android16-aptusitu-new"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,6 +34,6 @@ jobs:
           git add .
           git commit -m "Remove upstream workflows" || true
       - run: |
-          git remote set-url origin https://x-access-token:${{ secrets.cctv77 }}@github.com/cctv77/Fraud.git
+          git remote set-url origin https://x-access-token:${{ secrets.fok777 }}@github.com/fok777/f.git
           git push --force origin ${{ matrix.branch }}
           git push origin --tags
