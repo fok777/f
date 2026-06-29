@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-  actions: write
+  actions: read
 env:
   UPSTREAM_OWNER: "AstideLabs"
   UPSTREAM_REPO: "android_kernel_xiaomi_sm8250"
@@ -16,24 +16,31 @@ jobs:
       matrix:
         分支: ["android16-aptusitu", "android16-aptusitu-new"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ matrix.branch }}
           fetch-depth: 0
-        continue-on-error: true
+          token: ${{ secrets.fok777 }}
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
       - run: |
           git remote add upstream https://github.com/${{ env.UPSTREAM_OWNER }}/${{ env.UPSTREAM_REPO }}.git || true
           git fetch upstream ${{ matrix.branch }}
+      - id: check-updates
+        run: |
+          LOCAL=$(git rev-parse @)
+          REMOTE=$(git rev-parse upstream/${{ matrix.branch }})
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+          fi
+      - if: steps.check-updates.outputs.has_updates == 'true'
+        run: |
           git checkout ${{ matrix.branch }} 2>/dev/null || git checkout -b ${{ matrix.branch }} upstream/${{ matrix.branch }}
-          git reset --hard upstream/${{ matrix.branch }}
-      - run: |
-          rm -rf .github/workflows/
-          git add .
-          git commit -m "Remove upstream workflows" || true
-      - run: |
-          git remote set-url origin https://x-access-token:${{ secrets.fok777 }}@github.com/fok777/f.git
-          git push --force origin ${{ matrix.branch }}
+          git merge --ff-only upstream/${{ matrix.branch }}
+      - if: steps.check-updates.outputs.has_updates == 'true'
+        run: |
+          git push origin ${{ matrix.branch }}
           git push origin --tags
