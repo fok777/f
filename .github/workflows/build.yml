@@ -14,32 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        分支: ["android16-aptusitu", "android16-aptusitu-new"]
+        branch: ["android16-aptusitu", "android16-aptusitu-new"]
     steps:
-      - uses: actions/checkout@v6
+      - id: check-branch
+        run: |
+          if git ls-remote --exit-code --heads https://github.com/${{ env.UPSTREAM_OWNER }}/${{ env.UPSTREAM_REPO }}.git ${{ matrix.branch }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      - if: steps.check-branch.outputs.exists == 'true'
+        uses: actions/checkout@v6
         with:
+          repository: ${{ env.UPSTREAM_OWNER }}/${{ env.UPSTREAM_REPO }}
           ref: ${{ matrix.branch }}
           fetch-depth: 0
           token: ${{ secrets.fok777 }}
-      - run: |
+      - if: steps.check-branch.outputs.exists == 'true'
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-      - run: |
-          git remote add upstream https://github.com/${{ env.UPSTREAM_OWNER }}/${{ env.UPSTREAM_REPO }}.git || true
-          git fetch upstream ${{ matrix.branch }}
-      - id: check-updates
+      - if: steps.check-branch.outputs.exists == 'true'
         run: |
-          LOCAL_HASH=$(git rev-parse HEAD)
-          REMOTE_HASH=$(git rev-parse upstream/${{ matrix.branch }} 2>/dev/null || echo "none")
-          if [ "$LOCAL_HASH" != "$REMOTE_HASH" ] && [ "$REMOTE_HASH" != "none" ]; then
-            echo "has_updates=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_updates=false" >> $GITHUB_OUTPUT
-          fi
-      - if: steps.check-updates.outputs.has_updates == 'true'
-        run: |
-          git merge --ff-only upstream/${{ matrix.branch }}
-      - if: steps.check-updates.outputs.has_updates == 'true'
-        run: |
-          git push origin ${{ matrix.branch }}
+          git remote set-url origin https://x-access-token:${{ secrets.fok777 }}@github.com/fok777/f.git
+          git push --force origin ${{ matrix.branch }}
           git push origin --tags
