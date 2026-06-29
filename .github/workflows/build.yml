@@ -29,16 +29,15 @@ jobs:
           git fetch upstream ${{ matrix.branch }}
       - id: check-updates
         run: |
-          LOCAL=$(git rev-parse @)
-          REMOTE=$(git rev-parse upstream/${{ matrix.branch }})
-          if [ "$LOCAL" != "$REMOTE" ]; then
+          LOCAL_HASH=$(git rev-parse HEAD)
+          REMOTE_HASH=$(git rev-parse upstream/${{ matrix.branch }} 2>/dev/null || echo "none")
+          if [ "$LOCAL_HASH" != "$REMOTE_HASH" ] && [ "$REMOTE_HASH" != "none" ]; then
             echo "has_updates=true" >> $GITHUB_OUTPUT
           else
             echo "has_updates=false" >> $GITHUB_OUTPUT
           fi
       - if: steps.check-updates.outputs.has_updates == 'true'
         run: |
-          git checkout ${{ matrix.branch }} 2>/dev/null || git checkout -b ${{ matrix.branch }} upstream/${{ matrix.branch }}
           git merge --ff-only upstream/${{ matrix.branch }}
       - if: steps.check-updates.outputs.has_updates == 'true'
         run: |
