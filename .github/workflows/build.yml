@@ -1,13 +1,13 @@
 name: Build Kernel
 
-on:
+于:
   workflow_dispatch:
     inputs:
       device:
         description: 'Target Device Codename (e.g., lmi, umi)'
         required: true
-        default: 'alioth'
-        type: choice
+        默认: 'alioth'
+        输入: choice
         options:
           - psyche
           - thyme
@@ -26,8 +26,8 @@ on:
       script:
         description: 'Select Build Script'
         required: true
-        default: 'build-miui.sh'
-        type: choice
+        默认: 'build-miui.sh'
+        输入: choice
         options:
           - build.sh
           - build-miui.sh
